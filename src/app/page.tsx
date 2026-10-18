@@ -1120,6 +1120,51 @@ export default function Home() {
 
                     <div className="border-t border-slate-200 dark:border-slate-800/80" />
 
+                    {/* Bilingual Voice Assistant for Herd & Feed Profiler */}
+                    <div className="rounded-2xl bg-emerald-50/70 dark:bg-gradient-to-br dark:from-slate-900 dark:to-emerald-950/20 border border-emerald-300 dark:border-emerald-500/25 p-4 space-y-3 shadow-sm">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <Mic className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                          <span className="text-xs font-bold text-slate-900 dark:text-white">Bilingual Voice Input (தமிழ் / English)</span>
+                        </div>
+                        <Badge color="emerald">Voice Auto-Fill</Badge>
+                      </div>
+                      <p className="text-[11px] text-slate-600 dark:text-slate-400">
+                        Speak your herd details in Tamil or English to auto-populate the form below hands-free.
+                      </p>
+                      <div className="flex items-center gap-2">
+                        <select value={voiceLang} onChange={e => setVoiceLang(e.target.value as any)}
+                          className="flex-1 bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 text-xs rounded-xl px-3 py-2 text-slate-900 dark:text-slate-300 focus:outline-none font-medium">
+                          <option value="ta-IN">தமிழ் (Tamil - IN)</option>
+                          <option value="en-IN">English (Indian)</option>
+                        </select>
+                        <button type="button" onClick={startListening}
+                          className={`px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 transition flex-shrink-0
+                            ${isListening ? "bg-red-500 text-white animate-pulse" : "bg-emerald-600 hover:bg-emerald-500 text-white dark:bg-emerald-500 dark:hover:bg-emerald-400 dark:text-slate-950"}`}>
+                          {isListening ? <><MicOff className="w-3.5 h-3.5" />Stop</> : <><Mic className="w-3.5 h-3.5" />Speak</>}
+                        </button>
+                      </div>
+                      <button type="button" onClick={simulateTamil}
+                        className="w-full py-2 rounded-xl bg-white dark:bg-slate-800 hover:bg-emerald-50 dark:hover:bg-slate-700 border border-emerald-300 dark:border-slate-700 text-xs text-emerald-800 dark:text-emerald-300 font-bold flex items-center justify-center gap-1.5 transition shadow-sm">
+                        <Sparkles className="w-3 h-3 text-amber-500 dark:text-amber-400" />Simulate Tamil Voice Command (Demo)
+                      </button>
+                      {voiceTranscript && (
+                        <div className="p-2.5 rounded-xl bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-800 text-[11px] text-slate-800 dark:text-slate-400 italic">
+                          &ldquo;{voiceTranscript}&rdquo;
+                        </div>
+                      )}
+                      <AnimatePresence>
+                        {voiceToast && (
+                          <motion.div initial={{ opacity: 0, y: -5 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
+                            className="text-[11px] text-emerald-800 dark:text-emerald-300 bg-emerald-100 dark:bg-emerald-950/60 border border-emerald-300 dark:border-emerald-500/30 p-2 rounded-xl text-center font-bold">
+                            {voiceToast}
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </div>
+
+                    <div className="border-t border-slate-200 dark:border-slate-800/80" />
+
                     {/* Form fields */}
                     <form onSubmit={e => { e.preventDefault(); handleAnalyze(); }} className="space-y-4">
                       <FormInput label="Farmer / Enterprise Name">
@@ -1447,47 +1492,28 @@ export default function Home() {
                     </div>
                   </div>
 
-                  {/* Bilingual Voice Assistant */}
-                  <div className="rounded-2xl bg-emerald-50/70 dark:bg-gradient-to-br dark:from-slate-900 dark:to-emerald-950/20 border border-emerald-300 dark:border-emerald-500/25 p-4 space-y-3">
+                  {/* Agro-Climatic Micro-Zone Advisory Context */}
+                  <div className="rounded-2xl bg-amber-500/10 border border-amber-500/20 p-4 space-y-2.5">
                     <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <Mic className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-                        <span className="text-xs font-bold text-slate-900 dark:text-white">Bilingual Voice Input (தமிழ் / English)</span>
-                      </div>
-                      <Badge color="emerald">Tamil Nadu Dialect</Badge>
+                      <span className="text-xs font-bold text-amber-800 dark:text-amber-300 flex items-center gap-1.5">
+                        <Thermometer className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
+                        Agro-Climatic Thermal Status
+                      </span>
+                      <Badge color="amber">Sentinel-3 Earth Engine</Badge>
                     </div>
-                    <p className="text-[11px] text-slate-600 dark:text-slate-400">
-                      Speak your cattle count, breed, milk yield, or fodder in Tamil or English to auto-populate the farm regime.
+                    <p className="text-[11px] text-slate-700 dark:text-slate-400 leading-relaxed font-medium">
+                      High THI (&gt;78) in {district} accelerates cattle heat stress, reducing rumination efficiency and spiking enteric methane intensity. Pair with chaffed silage scanned on the right to optimize passage rates.
                     </p>
-                    <div className="flex items-center gap-2">
-                      <select value={voiceLang} onChange={e => setVoiceLang(e.target.value as any)}
-                        className="flex-1 bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 text-xs rounded-xl px-3 py-2 text-slate-900 dark:text-slate-300 focus:outline-none font-medium">
-                        <option value="ta-IN">தமிழ் (IN)</option>
-                        <option value="en-IN">English (IN)</option>
-                      </select>
-                      <button onClick={startListening}
-                        className={`px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 transition flex-shrink-0
-                          ${isListening ? "bg-red-500 text-white animate-pulse" : "bg-emerald-600 hover:bg-emerald-500 text-white dark:bg-emerald-500 dark:hover:bg-emerald-400 dark:text-slate-950"}`}>
-                        {isListening ? <><MicOff className="w-3.5 h-3.5" />Stop</> : <><Mic className="w-3.5 h-3.5" />Speak</>}
+                    <div className="pt-1 flex items-center justify-between border-t border-amber-500/15">
+                      <span className="text-[10px] text-slate-500 font-medium">Configure herd numbers &amp; feeds:</span>
+                      <button
+                        onClick={() => setActiveTab("optimizer")}
+                        className="text-[11px] font-bold text-emerald-700 dark:text-emerald-400 hover:underline flex items-center gap-1 transition"
+                      >
+                        <span>Open Herd &amp; Feed Profiler</span>
+                        <ChevronRight className="w-3 h-3" />
                       </button>
                     </div>
-                    <button onClick={simulateTamil}
-                      className="w-full py-2 rounded-xl bg-white dark:bg-slate-800 hover:bg-emerald-50 dark:hover:bg-slate-700 border border-emerald-300 dark:border-slate-700 text-xs text-emerald-800 dark:text-emerald-300 font-bold flex items-center justify-center gap-1.5 transition shadow-sm">
-                      <Sparkles className="w-3 h-3 text-amber-500 dark:text-amber-400" />Simulate Tamil Voice Command (Demo)
-                    </button>
-                    {voiceTranscript && (
-                      <div className="p-2.5 rounded-xl bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-800 text-[11px] text-slate-800 dark:text-slate-400 italic">
-                        &ldquo;{voiceTranscript}&rdquo;
-                      </div>
-                    )}
-                    <AnimatePresence>
-                      {voiceToast && (
-                        <motion.div initial={{ opacity: 0, y: -5 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
-                          className="text-[11px] text-emerald-800 dark:text-emerald-300 bg-emerald-100 dark:bg-emerald-950/60 border border-emerald-300 dark:border-emerald-500/30 p-2 rounded-xl text-center font-bold">
-                          {voiceToast}
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
                   </div>
                 </div>
 
