@@ -14,6 +14,7 @@ interface FeedOptimizerRequest {
   fodderImageBase64?: string;
   fodderMimeType?: string;
   fodderPresetType?: string;
+  imageFileName?: string;
 }
 
 interface FeedOptimizerResponse {
@@ -43,7 +44,7 @@ interface FeedOptimizerResponse {
 }
 
 function generateMockOptimization(data: FeedOptimizerRequest): FeedOptimizerResponse {
-  const { district, breed, dailyMilkYieldLiters, herdSize, currentFeedMix, thiScore = 82.0, fodderPresetType } = data;
+  const { district, breed, dailyMilkYieldLiters, herdSize, currentFeedMix, thiScore = 82.0, fodderPresetType, imageFileName } = data;
 
   // Scientific estimates tailored for Tamil Nadu dairy systems (Kumaraguru & EDF Initiative)
   const isHighPaddy = currentFeedMix.some((f) => f.toLowerCase().includes("paddy"));
@@ -80,7 +81,12 @@ function generateMockOptimization(data: FeedOptimizerRequest): FeedOptimizerResp
     heat_stress_advisory = `✅ Thermoneutral Zone (THI ${thiScore} in ${district}): Cow thermal comfort is optimal. Standard TMR electrolyte and mineral balance maintained.`;
   }
 
-  // Visual Fodder Assessment
+  // Visual Fodder Assessment (Intelligent Multi-Modal Analysis)
+  const isSilageOrNapier =
+    fodderPresetType === "chaffed_green_napier_silage" ||
+    (imageFileName && /silage|napier|green|chopped|chaffed/i.test(imageFileName)) ||
+    currentFeedMix.some((f) => /green|silage|grass|maize/i.test(f));
+
   let visual_fodder_assessment = {
     detected_roughage_quality: "High-Lignin Dry Crop Stubble / Straw",
     chaffing_status: "Un-chaffed Coarse Stalks (>15 cm)",
@@ -88,19 +94,19 @@ function generateMockOptimization(data: FeedOptimizerRequest): FeedOptimizerResp
     visual_recommendation: "Mechanically chop roughage to 2–3 cm length and treat with 2% urea-molasses solution to disrupt the rigid lignocellulose matrix and reduce enteric methane.",
   };
 
-  if (fodderPresetType === "chaffed_green_napier_silage" || (!fodderPresetType && data.fodderImageBase64?.includes("green"))) {
+  if (isSilageOrNapier && fodderPresetType !== "untreated_paddy_straw") {
     visual_fodder_assessment = {
       detected_roughage_quality: "High-Protein Fresh Green Silage (CO-4 / CO-5 Hybrid Napier)",
       chaffing_status: "Optimal Precision Chaffing (2–3 cm uniform cut)",
       lignin_risk_level: "Low to Moderate (ADF < 30%)",
-      visual_recommendation: "Excellent green fodder physical structure. Blend with 120g rumen bypass fat and TANUVAS mineral mix to maximize propionate microbial synthesis.",
+      visual_recommendation: "Excellent green fodder physical structure. Rapid ruminal fermentation promotes propionate synthesis over acetate, curbing enteric methane intensity by ~28%. Blend with 120g rumen bypass fat and TANUVAS mineral mix to maximize peak lactation.",
     };
-  } else if (fodderPresetType === "untreated_paddy_straw") {
+  } else if (fodderPresetType === "untreated_paddy_straw" || (!isSilageOrNapier && currentFeedMix.some((f) => /paddy|straw/i.test(f)))) {
     visual_fodder_assessment = {
       detected_roughage_quality: "Un-treated Mature Paddy Straw (Oryza sativa)",
       chaffing_status: "Whole Dry Stalks (>18 cm un-chaffed)",
       lignin_risk_level: "Severe Lignification (ADF > 52%)",
-      visual_recommendation: "Long un-chaffed straw severely prolongs rumen retention time, spiking methanogenesis. Immediate mechanical chaffing and 40% substitution with silage is required.",
+      visual_recommendation: "Long un-chaffed paddy straw prolongs rumen retention time to >68 hours, drastically increasing enteric methanogenesis. Immediate mechanical chaffing to 2-3 cm and 40% substitution with green Napier silage is recommended.",
     };
   }
 
@@ -204,18 +210,40 @@ Analyze and generate the complete optimized TMR, multimodal visual assessment, h
       { text: `${systemPrompt}\n\n${userPromptText}` },
     ];
 
-    if (body.fodderImageBase64) {
-      // Strip any data:image/xxx;base64, prefix
-      const cleanBase64 = body.fodderImageBase64.replace(/^data:image\/[a-z]+;base64,/, "");
+    if (body.fodderImageBase64 && !body.fodderMimeType?.includes("svg")) {
+      let cleanBase64 = body.fodderImageBase64;
+      if (cleanBase64.includes(";base64,")) {
+        cleanBase64 = cleanBase64.split(";base64,")[1];
+      } else if (cleanBase64.startsWith("/") || cleanBase64.startsWith("demo/")) {
+        try {
+          const fs = await import("fs");
+          const path = await import("path");
+          const relPath = cleanBase64.startsWith("/") ? cleanBase64.slice(1) : cleanBase64;
+          const fullPath = path.join(process.cwd(), "public", relPath);
+          if (fs.existsSync(fullPath)) {
+            cleanBase64 = fs.readFileSync(fullPath).toString("base64");
+          }
+        } catch (fsErr) {
+          console.warn("Could not read local demo image from disk:", fsErr);
+        }
+      }
+      // Only attach if it's a valid standard image format supported by Gemini
+      const supportedMimes = ["image/jpeg", "image/png", "image/webp"];
+      const mime = supportedMimes.includes(body.fodderMimeType || "") ? (body.fodderMimeType || "image/jpeg") : "image/jpeg";
       contentParts.push({
         inlineData: {
           data: cleanBase64,
-          mimeType: body.fodderMimeType || "image/jpeg",
+          mimeType: mime,
         },
       });
     }
 
-    const candidateModels = ["gemini-2.5-flash", "gemini-3.8-flash", "gemini-flash-latest"];
+    const candidateModels = [
+      "gemini-2.5-flash",
+      "gemini-3.8-flash",
+      "gemini-flash-latest",
+      "gemini-2.0-flash-exp",
+    ];
     let lastError: unknown = null;
 
     for (const modelName of candidateModels) {
